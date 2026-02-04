@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Miami Vice Backgammon - Final Edition</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon.png">
     <style>
         :root {
             --player-1: rgb(235, 149, 228); 
@@ -11,12 +14,13 @@
             --bg-dark: rgba(10, 10, 30, 0.7);
         }
 
-body, html {
-    margin: 0; padding: 0; width: 100%; height: 100%;
-    background: #050510; /* Neutraler dunkler Hintergrund außen */
-    font-family: 'Segoe UI', sans-serif;
-    overflow: hidden; display: flex; justify-content: center; align-items: center;
-}
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background: #050510;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden; display: flex; justify-content: center; align-items: center;
+        }
+
         #turn-indicator {
             position: absolute; top: env(safe-area-inset-top, 15px); 
             left: 50%; transform: translateX(-50%);
@@ -24,39 +28,29 @@ body, html {
             text-shadow: 0 0 15px var(--player-2); z-index: 100; text-align: center;
         }
 
-#game-container {
-    width: 92vw; 
-    height: 82vh; 
-    max-width: 1100px;
-    margin-left: env(safe-area-inset-left);
-    margin-right: env(safe-area-inset-right);
-    
-    /* Bild direkt im Board-Container */
-    background-image: linear-gradient(rgba(10, 10, 30, 0.6), rgba(10, 10, 30, 0.6)), url('1.jpeg');
-    background-size: 100% 100%; /* Zwingt das Bild exakt in die Box */
-    background-position: center;
-    
-    border: 3px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 0 50px rgba(0, 0, 0, 0.7);
-    display: flex; position: relative;
-    backdrop-filter: blur(5px); 
-    border-radius: 12px;
-}
+        #game-container {
+            width: 92vw; 
+            height: 82vh; 
+            max-width: 1100px;
+            margin-left: env(safe-area-inset-left);
+            margin-right: env(safe-area-inset-right);
+            background-image: linear-gradient(rgba(10, 10, 30, 0.6), rgba(10, 10, 30, 0.6)), url('1.jpeg');
+            background-size: 100% 100%; 
+            background-position: center;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.7);
+            display: flex; position: relative;
+            backdrop-filter: blur(5px); 
+            border-radius: 12px;
+        }
 
-        /* Anpassung für flache Querformate (iPhone) */
         @media (orientation: landscape) and (max-height: 500px) {
-            #game-container {
-                height: 88vh;
-            }
-            #turn-indicator {
-                top: 5px;
-                font-size: 0.8rem;
-            }
+            #game-container { height: 88vh; }
+            #turn-indicator { top: 5px; font-size: 0.8rem; }
         }
 
         .board-half { flex: 1; display: flex; flex-direction: column; z-index: 1; }
         .quadrant { flex: 1; display: flex; justify-content: space-around; position: relative; }
-
         .point { width: 14%; height: 100%; position: relative; display: flex; justify-content: center; cursor: pointer; z-index: 5; }
 
         .triangle-shape { position: absolute; width: 100%; height: 85%; z-index: 1; opacity: 1; pointer-events: none; }
@@ -83,25 +77,13 @@ body, html {
         .black-checker { background: radial-gradient(circle at 35% 35%, #444, #000); border: 1px solid #333; }
 
         #bar { 
-            width: 70px; 
-            background: rgba(255, 255, 255, 0.05); 
+            width: 70px; background: rgba(255, 255, 255, 0.05); 
             border-left: 2px solid rgba(255, 255, 255, 0.1); 
             border-right: 2px solid rgba(255, 255, 255, 0.1); 
-            z-index: 2; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center;
-            gap: 20px;
+            z-index: 2; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px;
         }
 
-        .bar-section { 
-            width: 100%; 
-            display: flex; 
-            align-items: center; 
-            cursor: pointer;
-            min-height: 150px;
-        }
+        .bar-section { width: 100%; display: flex; align-items: center; cursor: pointer; min-height: 150px; }
         #bar-white { flex-direction: column-reverse; justify-content: flex-start; }
         #bar-black { flex-direction: column; justify-content: flex-start; }
         .bar-section .checker { margin: 2px 0; }
@@ -112,9 +94,7 @@ body, html {
         .die.rolling { animation: roll 0.4s infinite linear; }
         @keyframes roll { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        #off-board {
-            width: 40px; background: rgba(0,0,0,0.2); display: flex; flex-direction: column; justify-content: space-between; padding: 10px 0;
-        }
+        #off-board { width: 40px; background: rgba(0,0,0,0.2); display: flex; flex-direction: column; justify-content: space-between; padding: 10px 0; }
         .off-section { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
         .off-checker { width: 30px; height: 10px; border-radius: 2px; border: 1px solid rgba(255,255,255,0.3); }
     </style>
@@ -152,9 +132,16 @@ body, html {
     <script>
         let gameState = {
             points: {
-                1: { count: 2, color: 'white' }, 6: { count: 5, color: 'black' }, 8: { count: 3, color: 'black' },
-                12: { count: 5, color: 'white' }, 13: { count: 5, color: 'black' }, 17: { count: 3, color: 'white' },
-                19: { count: 5, color: 'white' }, 24: { count: 2, color: 'black' }
+                // Turquoise (Black) Steine
+                1: { count: 2, color: 'black' },
+                12: { count: 5, color: 'black' },
+                17: { count: 3, color: 'black' },
+                19: { count: 5, color: 'black' },
+                // Pink (White) Steine
+                6: { count: 5, color: 'white' },
+                8: { count: 3, color: 'white' },
+                13: { count: 5, color: 'white' },
+                24: { count: 2, color: 'white' }
             },
             bar: { white: 0, black: 0 },
             off: { white: 0, black: 0 },
@@ -255,14 +242,32 @@ body, html {
         async function handlePointClick(num) {
             if (!gameState.diceRolled || gameState.isAnimating) return;
 
+            // NEU: Doppelklick-Logik zum Rausspielen
+            if (gameState.selectedPoint === num && isHomeReady()) {
+                const dists = gameState.currentRoll.sort((a, b) => a - b);
+                let appliedDist = null;
+                for (let d of dists) {
+                    const to = gameState.currentPlayer === 'white' ? num - d : parseInt(num) + d;
+                    if ((gameState.currentPlayer === 'white' && to <= 0) || (gameState.currentPlayer === 'black' && to >= 25)) {
+                        if (isMoveLegal(num, to, d)) { appliedDist = d; break; }
+                    }
+                }
+                if (appliedDist) {
+                    const from = num;
+                    gameState.selectedPoint = null;
+                    const targetOff = gameState.currentPlayer === 'white' ? 0 : 25;
+                    await animateAndMove(from, targetOff, appliedDist);
+                    return;
+                }
+            }
+
             if (gameState.selectedPoint === null) {
                 if (gameState.bar[gameState.currentPlayer] > 0) return;
                 if (gameState.points[num]?.color === gameState.currentPlayer) {
                     gameState.selectedPoint = num; 
                     renderBoard();
                 }
-            } 
-            else {
+            } else {
                 const from = gameState.selectedPoint;
                 if (from === num) {
                     gameState.selectedPoint = null;
@@ -317,7 +322,8 @@ body, html {
             if (from === 'bar') {
                 startRect = document.getElementById(`bar-${gameState.currentPlayer}`).lastElementChild.getBoundingClientRect();
             } else {
-                startRect = document.querySelector(`[data-point="${from}"] .checker-stack`).lastElementChild.getBoundingClientRect();
+                const stackEl = document.querySelector(`[data-point="${from}"] .checker-stack`);
+                startRect = stackEl.lastElementChild.getBoundingClientRect();
             }
 
             executeMoveLogic(from, to, dist);
