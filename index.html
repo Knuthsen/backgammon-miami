@@ -6,7 +6,6 @@
     <title>Miami Vice Backgammon - Final Edition</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="icon.png">
     <style>
         :root {
             --player-1: rgb(235, 149, 228); 
@@ -29,19 +28,12 @@
         }
 
         #game-container {
-            width: 92vw; 
-            height: 82vh; 
-            max-width: 1100px;
-            margin-left: env(safe-area-inset-left);
-            margin-right: env(safe-area-inset-right);
+            width: 92vw; height: 82vh; max-width: 1100px;
+            margin-left: env(safe-area-inset-left); margin-right: env(safe-area-inset-right);
             background-image: linear-gradient(rgba(10, 10, 30, 0.6), rgba(10, 10, 30, 0.6)), url('1.jpeg');
-            background-size: 100% 100%; 
-            background-position: center;
-            border: 3px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 0 50px rgba(0, 0, 0, 0.7);
-            display: flex; position: relative;
-            backdrop-filter: blur(5px); 
-            border-radius: 12px;
+            background-size: 100% 100%; background-position: center;
+            border: 3px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 50px rgba(0, 0, 0, 0.7);
+            display: flex; position: relative; backdrop-filter: blur(5px); border-radius: 12px;
         }
 
         @media (orientation: landscape) and (max-height: 500px) {
@@ -72,21 +64,13 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.6); flex-shrink: 0; position: relative;
         }
         .checker.selected { outline: 3px solid white; box-shadow: 0 0 20px white; z-index: 50; transform: scale(1.1); }
-        
         .white-checker { background: radial-gradient(circle at 35% 35%, #fff, #bbb); border: 1px solid #fff; }
         .black-checker { background: radial-gradient(circle at 35% 35%, #444, #000); border: 1px solid #333; }
 
-        #bar { 
-            width: 70px; background: rgba(255, 255, 255, 0.05); 
-            border-left: 2px solid rgba(255, 255, 255, 0.1); 
-            border-right: 2px solid rgba(255, 255, 255, 0.1); 
-            z-index: 2; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px;
-        }
-
+        #bar { width: 70px; background: rgba(255, 255, 255, 0.05); border-left: 2px solid rgba(255, 255, 255, 0.1); border-right: 2px solid rgba(255, 255, 255, 0.1); z-index: 2; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; }
         .bar-section { width: 100%; display: flex; align-items: center; cursor: pointer; min-height: 150px; }
         #bar-white { flex-direction: column-reverse; justify-content: flex-start; }
         #bar-black { flex-direction: column; justify-content: flex-start; }
-        .bar-section .checker { margin: 2px 0; }
 
         #dice-container { display: flex; flex-direction: column; gap: 15px; cursor: pointer; }
         .die { width: 35px; height: 35px; background: white; border-radius: 6px; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); padding: 5px; box-sizing: border-box; }
@@ -101,7 +85,7 @@
 </head>
 <body>
 
-    <div id="turn-indicator">Player: <span id="p-name" style="color: var(--player-1)">PINK</span><br><small id="p-moves">Click dice to roll</small></div>
+<div id="turn-indicator">Player: <span id="p-name" style="color: var(--player-1)">PINKY</span><br><small id="p-moves">Click dice to roll</small></div>
 
     <div id="game-container">
         <div class="board-half">
@@ -132,24 +116,12 @@
     <script>
         let gameState = {
             points: {
-                // Turquoise (Black) Steine
-                1: { count: 2, color: 'black' },
-                12: { count: 5, color: 'black' },
-                17: { count: 3, color: 'black' },
-                19: { count: 5, color: 'black' },
-                // Pink (White) Steine
-                6: { count: 5, color: 'white' },
-                8: { count: 3, color: 'white' },
-                13: { count: 5, color: 'white' },
-                24: { count: 2, color: 'white' }
+                1: { count: 2, color: 'black' }, 12: { count: 5, color: 'black' }, 17: { count: 3, color: 'black' }, 19: { count: 5, color: 'black' },
+                6: { count: 5, color: 'white' }, 8: { count: 3, color: 'white' }, 13: { count: 5, color: 'white' }, 24: { count: 2, color: 'white' }
             },
-            bar: { white: 0, black: 0 },
-            off: { white: 0, black: 0 },
-            currentPlayer: 'white',
-            currentRoll: [],
-            selectedPoint: null,
-            diceRolled: false,
-            isAnimating: false
+            bar: { white: 0, black: 0 }, off: { white: 0, black: 0 },
+            currentPlayer: 'white', currentRoll: [], selectedPoint: null,
+            diceRolled: false, isAnimating: false
         };
 
         const patterns = { 1:[4], 2:[0,8], 3:[0,4,8], 4:[0,2,6,8], 5:[0,2,4,6,8], 6:[0,2,3,5,6,8] };
@@ -169,30 +141,27 @@
             const d1 = Math.floor(Math.random() * 6) + 1;
             const d2 = Math.floor(Math.random() * 6) + 1;
             document.querySelectorAll('.die').forEach(d => d.classList.add('rolling'));
-            
             setTimeout(() => {
                 document.querySelectorAll('.die').forEach(d => d.classList.remove('rolling'));
                 drawDie('die1', d1); drawDie('die2', d2);
                 gameState.currentRoll = (d1 === d2) ? [d1, d1, d1, d1] : [d1, d2];
                 gameState.diceRolled = true;
                 if (!canMoveAnywhere()) {
-                    document.getElementById('p-moves').innerText = "No moves possible!";
+                    document.getElementById('p-moves').innerText = "NO MOVES POSSIBLE!";
                     setTimeout(endTurn, 1500);
-                } else { updateUI(); }
+                } else { updateUI(); if(gameState.currentPlayer === 'black') setTimeout(makeAIMove, 1000); }
             }, 600);
         }
 
         function canMoveAnywhere() {
+            if (!gameState.currentRoll || gameState.currentRoll.length === 0) return false;
             const rolls = [...new Set(gameState.currentRoll)];
-            if (gameState.bar[gameState.currentPlayer] > 0) {
-                return rolls.some(r => isMoveLegal('bar', gameState.currentPlayer === 'white' ? 25 - r : r, r));
-            }
-            const canOff = isHomeReady();
+            const player = gameState.currentPlayer;
+            if (gameState.bar[player] > 0) return rolls.some(r => isMoveLegal('bar', player === 'white' ? 25 - r : r, r));
             for (let p in gameState.points) {
-                if (gameState.points[p].color === gameState.currentPlayer) {
+                if (gameState.points[p].color === player) {
                     if (rolls.some(r => {
-                        const to = gameState.currentPlayer === 'white' ? p - r : parseInt(p) + r;
-                        if (canOff && (to < 1 || to > 24)) return true;
+                        const to = player === 'white' ? p - r : parseInt(p) + r;
                         return isMoveLegal(p, to, r);
                     })) return true;
                 }
@@ -202,12 +171,7 @@
 
         function isHomeReady() {
             if (gameState.bar[gameState.currentPlayer] > 0) return false;
-            for (let p in gameState.points) {
-                if (gameState.points[p].color === gameState.currentPlayer) {
-                    if (gameState.currentPlayer === 'white' && p > 6) return false;
-                    if (gameState.currentPlayer === 'black' && p < 19) return false;
-                }
-            }
+            for (let p in gameState.points) if (gameState.points[p].color === gameState.currentPlayer && (gameState.currentPlayer === 'white' ? p > 6 : p < 19)) return false;
             return true;
         }
 
@@ -216,16 +180,10 @@
                 if (!isHomeReady()) return false;
                 if (gameState.currentPlayer === 'white') {
                     if (to === 0) return true;
-                    if (to < 0) {
-                        for (let i = 6; i > from; i--) if (gameState.points[i]?.color === 'white') return false;
-                        return true;
-                    }
+                    if (to < 0) { for (let i = 6; i > from; i--) if (gameState.points[i]?.color === 'white') return false; return true; }
                 } else {
                     if (to === 25) return true;
-                    if (to > 25) {
-                        for (let i = 19; i < from; i++) if (gameState.points[i]?.color === 'black') return false;
-                        return true;
-                    }
+                    if (to > 25) { for (let i = 19; i < from; i++) if (gameState.points[i]?.color === 'black') return false; return true; }
                 }
                 return false;
             }
@@ -240,124 +198,84 @@
         }
 
         async function handlePointClick(num) {
-            if (!gameState.diceRolled || gameState.isAnimating) return;
-
-            // NEU: Doppelklick-Logik zum Rausspielen
+            if (!gameState.diceRolled || gameState.isAnimating || gameState.currentPlayer === 'black') return;
             if (gameState.selectedPoint === num && isHomeReady()) {
                 const dists = gameState.currentRoll.sort((a, b) => a - b);
-                let appliedDist = null;
                 for (let d of dists) {
                     const to = gameState.currentPlayer === 'white' ? num - d : parseInt(num) + d;
-                    if ((gameState.currentPlayer === 'white' && to <= 0) || (gameState.currentPlayer === 'black' && to >= 25)) {
-                        if (isMoveLegal(num, to, d)) { appliedDist = d; break; }
-                    }
-                }
-                if (appliedDist) {
-                    const from = num;
-                    gameState.selectedPoint = null;
-                    const targetOff = gameState.currentPlayer === 'white' ? 0 : 25;
-                    await animateAndMove(from, targetOff, appliedDist);
-                    return;
+                    if (isMoveLegal(num, to, d) && (to < 1 || to > 24)) { await animateAndMove(num, to < 1 ? 0 : 25, d); return; }
                 }
             }
-
             if (gameState.selectedPoint === null) {
                 if (gameState.bar[gameState.currentPlayer] > 0) return;
-                if (gameState.points[num]?.color === gameState.currentPlayer) {
-                    gameState.selectedPoint = num; 
-                    renderBoard();
-                }
+                if (gameState.points[num]?.color === gameState.currentPlayer) { gameState.selectedPoint = num; renderBoard(); }
             } else {
                 const from = gameState.selectedPoint;
-                if (from === num) {
-                    gameState.selectedPoint = null;
-                    renderBoard();
-                    return;
-                }
-
+                if (from === num) { gameState.selectedPoint = null; renderBoard(); return; }
                 const dists = gameState.currentRoll.sort((a,b) => a-b);
-                let appliedDist = null;
-
                 for (let d of dists) {
-                    const to = (from === 'bar') 
-                        ? (gameState.currentPlayer === 'white' ? 25 - d : d) 
-                        : (gameState.currentPlayer === 'white' ? from - d : parseInt(from) + d);
-                    
-                    if (to === num && isMoveLegal(from, to, d)) { 
-                        appliedDist = d; 
-                        break; 
-                    }
+                    const to = (from === 'bar') ? (gameState.currentPlayer === 'white' ? 25 - d : d) : (gameState.currentPlayer === 'white' ? from - d : parseInt(from) + d);
+                    if (to === num && isMoveLegal(from, to, d)) { await animateAndMove(from, to, d); return; }
                 }
-                
-                if (!appliedDist && isHomeReady()) {
-                    for (let d of dists) {
-                        const to = gameState.currentPlayer === 'white' ? from - d : parseInt(from) + d;
-                        if ((gameState.currentPlayer === 'white' && to <= 0) || (gameState.currentPlayer === 'black' && to >= 25)) {
-                            if (isMoveLegal(from, to, d)) { appliedDist = d; break; }
-                        }
-                    }
-                }
-
-                if (appliedDist) {
-                    const savedFrom = from;
-                    gameState.selectedPoint = null; 
-                    const to = (savedFrom === 'bar') 
-                        ? (gameState.currentPlayer === 'white' ? 25 - appliedDist : appliedDist) 
-                        : (gameState.currentPlayer === 'white' ? savedFrom - appliedDist : parseInt(savedFrom) + appliedDist);
-                    await animateAndMove(savedFrom, to, appliedDist);
-                } else {
-                    if (gameState.points[num]?.color === gameState.currentPlayer) {
-                        gameState.selectedPoint = num;
-                    } else {
-                        gameState.selectedPoint = null;
-                    }
-                    renderBoard();
-                }
+                if (gameState.points[num]?.color === gameState.currentPlayer) { gameState.selectedPoint = num; renderBoard(); }
+                else { gameState.selectedPoint = null; renderBoard(); }
             }
         }
 
         async function animateAndMove(from, to, dist) {
             gameState.isAnimating = true;
-            let startRect;
-            if (from === 'bar') {
-                startRect = document.getElementById(`bar-${gameState.currentPlayer}`).lastElementChild.getBoundingClientRect();
-            } else {
-                const stackEl = document.querySelector(`[data-point="${from}"] .checker-stack`);
-                startRect = stackEl.lastElementChild.getBoundingClientRect();
+            let movingChecker;
+            if (from === 'bar') movingChecker = document.getElementById(`bar-${gameState.currentPlayer}`).lastElementChild;
+            else movingChecker = document.querySelector(`[data-point="${from}"] .checker-stack`).lastElementChild;
+            
+            const startRect = movingChecker.getBoundingClientRect();
+            gameState.selectedPoint = null;
+
+            // Check if it's a "Hit"
+            let hitOccurred = false;
+            let hitRect = null;
+            if (to >= 1 && to <= 24 && gameState.points[to] && gameState.points[to].color !== gameState.currentPlayer) {
+                hitOccurred = true;
+                hitRect = document.querySelector(`[data-point="${to}"] .checker-stack`).lastElementChild.getBoundingClientRect();
             }
 
             executeMoveLogic(from, to, dist);
             renderBoard();
-            
-            let targetChecker;
-            if (to < 1 || to > 24) {
-                targetChecker = document.getElementById(`off-${gameState.currentPlayer}`).lastElementChild;
-            } else {
-                targetChecker = document.querySelector(`[data-point="${to}"] .checker-stack`).lastElementChild;
-            }
-            const endRect = targetChecker.getBoundingClientRect();
 
-            targetChecker.animate([
+            // Animate main checker
+            let targetChecker = (to < 1 || to > 24) ? document.getElementById(`off-${gameState.currentPlayer}`).lastElementChild : document.querySelector(`[data-point="${to}"] .checker-stack`).lastElementChild;
+            const endRect = targetChecker.getBoundingClientRect();
+            
+            const mainAnim = targetChecker.animate([
                 { transform: `translate(${startRect.left - endRect.left}px, ${startRect.top - endRect.top}px)` },
                 { transform: 'translate(0, 0)' }
-            ], { duration: 300, easing: 'ease-out' }).onfinish = () => {
+            ], { duration: 300, easing: 'ease-out' });
+
+            // Animate hit checker to bar
+            if (hitOccurred) {
+                const otherColor = gameState.currentPlayer === 'white' ? 'black' : 'white';
+                const barTarget = document.getElementById(`bar-${otherColor}`).lastElementChild;
+                const barRect = barTarget.getBoundingClientRect();
+                barTarget.animate([
+                    { transform: `translate(${hitRect.left - barRect.left}px, ${hitRect.top - barRect.top}px)` },
+                    { transform: 'translate(0, 0)' }
+                ], { duration: 400, easing: 'ease-in-out' });
+            }
+
+            mainAnim.onfinish = () => {
                 gameState.isAnimating = false;
-                gameState.selectedPoint = null;
-                if (gameState.currentRoll.length === 0 || !canMoveAnywhere()) { setTimeout(endTurn, 800); }
-                else { updateUI(); }
+                if (gameState.currentRoll.length === 0 || !canMoveAnywhere()) setTimeout(endTurn, 600);
+                else if (gameState.currentPlayer === 'black') setTimeout(makeAIMove, 600);
+                else updateUI();
             };
         }
 
         function executeMoveLogic(from, to, dist) {
             if (from === 'bar') gameState.bar[gameState.currentPlayer]--;
+            else { gameState.points[from].count--; if (gameState.points[from].count === 0) delete gameState.points[from]; }
+            
+            if (to < 1 || to > 24) { gameState.off[gameState.currentPlayer]++; }
             else {
-                gameState.points[from].count--;
-                if (gameState.points[from].count === 0) delete gameState.points[from];
-            }
-
-            if (to < 1 || to > 24) {
-                gameState.off[gameState.currentPlayer]++;
-            } else {
                 if (gameState.points[to] && gameState.points[to].color !== gameState.currentPlayer) {
                     gameState.bar[gameState.currentPlayer === 'white' ? 'black' : 'white']++;
                     gameState.points[to] = { count: 1, color: gameState.currentPlayer };
@@ -370,26 +288,20 @@
         }
 
         function endTurn() {
-            if (gameState.off.white === 15 || gameState.off.black === 15) {
-                alert("GAME OVER! " + (gameState.off.white === 15 ? "PINK" : "TURQUOISE") + " WINS!");
-                location.reload();
-                return;
-            }
+            if (gameState.off.white === 15 || gameState.off.black === 15) { alert("GAME OVER! " + (gameState.off.white === 15 ? "PINKY" : "BRAIN") + " holt die Weltherrschaft!"); location.reload(); return; }
             gameState.currentPlayer = gameState.currentPlayer === 'white' ? 'black' : 'white';
-            gameState.diceRolled = false;
-            gameState.currentRoll = [];
-            gameState.selectedPoint = null;
-            renderBoard();
-            updateUI();
+            gameState.diceRolled = false; gameState.currentRoll = []; gameState.selectedPoint = null;
+            renderBoard(); updateUI();
+            if(gameState.currentPlayer === 'black') checkAITurn();
         }
 
         function updateUI() {
             const isW = gameState.currentPlayer === 'white';
-            document.getElementById('p-name').innerText = isW ? 'PINK' : 'TURQUOISE';
-            document.getElementById('p-name').style.color = isW ? 'var(--player-1)' : 'var(--player-2)';
+            const nameEl = document.getElementById('p-name');
+            nameEl.innerText = isW ? 'PINKY' : 'BRAIN';
+            nameEl.style.color = isW ? 'var(--player-1)' : 'var(--player-2)';
             document.getElementById('p-moves').innerText = gameState.diceRolled ? `Moves: ${gameState.currentRoll.join(', ')}` : "Roll the dice";
-            renderBar('white'); renderBar('black');
-            renderOff();
+            renderBar('white'); renderBar('black'); renderOff();
         }
 
         function renderBar(color) {
@@ -413,10 +325,7 @@
         }
 
         function renderBoard() {
-            const layout = [
-                { id: 'q-lower-right', range: [6, 5, 4, 3, 2, 1] }, { id: 'q-lower-left',  range: [12, 11, 10, 9, 8, 7] },
-                { id: 'q-upper-left',  range: [13, 14, 15, 16, 17, 18] }, { id: 'q-upper-right', range: [19, 20, 21, 22, 23, 24] }
-            ];
+            const layout = [{ id: 'q-lower-right', range: [6, 5, 4, 3, 2, 1] }, { id: 'q-lower-left', range: [12, 11, 10, 9, 8, 7] }, { id: 'q-upper-left', range: [13, 14, 15, 16, 17, 18] }, { id: 'q-upper-right', range: [19, 20, 21, 22, 23, 24] }];
             layout.forEach(q => {
                 const el = document.getElementById(q.id); el.innerHTML = '';
                 q.range.forEach(num => {
@@ -438,8 +347,35 @@
             renderBar('white'); renderBar('black'); renderOff();
         }
 
-        renderBoard();
-        drawDie('die1', 1); drawDie('die2', 2);
+        function checkAITurn() { if (gameState.currentPlayer === 'black' && !gameState.diceRolled && !gameState.isAnimating) setTimeout(rollDice, 1200); }
+
+        async function makeAIMove() {
+            if (gameState.currentPlayer !== 'black' || gameState.isAnimating || !gameState.diceRolled) return;
+            if (gameState.currentRoll.length === 0) { endTurn(); return; }
+            const rolls = [...gameState.currentRoll].sort((a, b) => b - a);
+            let possibleMoves = [];
+            if (gameState.bar.black > 0) { for (let r of rolls) if (isMoveLegal('bar', r, r)) possibleMoves.push({ from: 'bar', to: r, dist: r, weight: 100 }); }
+            else {
+                for (let p in gameState.points) {
+                    if (gameState.points[p].color === 'black') {
+                        for (let r of rolls) {
+                            const to = parseInt(p) + r;
+                            if (isMoveLegal(p, to, r)) {
+                                let weight = to; if (to > 24) weight += 100;
+                                if (gameState.points[to] && gameState.points[to].count === 1) weight += 50;
+                                possibleMoves.push({ from: p, to: to, dist: r, weight: weight });
+                            }
+                        }
+                    }
+                }
+            }
+            if (possibleMoves.length > 0) {
+                possibleMoves.sort((a, b) => b.weight - a.weight);
+                await animateAndMove(possibleMoves[0].from, possibleMoves[0].to, possibleMoves[0].dist);
+            } else setTimeout(endTurn, 500);
+        }
+
+        renderBoard(); drawDie('die1', 1); drawDie('die2', 2);
     </script>
 </body>
 </html>
