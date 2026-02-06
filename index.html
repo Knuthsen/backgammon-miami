@@ -1,568 +1,1091 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Miami Vice Backgammon - Final Edition</title>
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="icon.png">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Miami Vice Backgammon - Brain Intelligence Edition</title>
 
-<style>
-    :root {
-        --player-1: rgb(235, 149, 228); 
-        --player-2: rgb(96, 207, 210);  
-        --bg-dark: rgba(10, 10, 30, 0.7);
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <style>
+    :root { --player-1: rgb(235, 149, 228); --player-2: rgb(96, 207, 210); }
+    body, html { margin:0; padding:0; width:100%; height:100%; background:#050510; font-family:'Segoe UI', sans-serif; overflow:hidden; display:flex; justify-content:center; align-items:center; }
+
+#analysis-toggle-wrap{
+  position:absolute;
+  top: env(safe-area-inset-top, 12px);
+  left: 12px;
+  z-index: 1500;
+}
+
+.analysis-toggle{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  user-select:none;
+  font-weight:700;
+  color:#fff;
+  text-shadow:0 0 10px rgba(0,0,0,0.9);
+  font-size:0.95rem;
+}
+
+.analysis-toggle input{ display:none; }
+
+.analysis-slider{
+  width:46px;
+  height:26px;
+  border-radius:999px;
+  background:rgba(255,255,255,0.25);
+  border:1px solid rgba(255,255,255,0.25);
+  position:relative;
+  box-shadow:0 0 18px rgba(0,0,0,0.4) inset;
+  cursor:pointer;
+}
+
+.analysis-slider::after{
+  content:"";
+  position:absolute;
+  top:3px; left:3px;
+  width:20px; height:20px;
+  border-radius:50%;
+  background:#fff;
+  transition:transform 0.18s ease;
+}
+
+.analysis-toggle input:checked + .analysis-slider{
+  background:rgba(96, 207, 210, 0.55);
+  border-color:rgba(96, 207, 210, 0.9);
+  box-shadow:0 0 18px rgba(96, 207, 210, 0.35);
+}
+
+.analysis-toggle input:checked + .analysis-slider::after{
+  transform:translateX(20px);
+}
+
+.analysis-label{ cursor:pointer; }
+
+
+    #ai-log{
+      position:absolute; top:50%; right:20px; transform:translateY(-50%);
+      width:280px; max-height:45vh; background:rgba(0,0,0,0.9);
+      border:2px solid var(--player-2); border-radius:8px; color:#00ffcc;
+      font-family:'Courier New', monospace; font-size:0.7rem; padding:12px;
+      z-index:1000; box-shadow:0 0 30px rgba(96, 207, 210, 0.4);
+      overflow-y:auto; pointer-events:auto; scrollbar-width:thin; scrollbar-color:var(--player-2) transparent; display:none;
+    }
+    #ai-log::-webkit-scrollbar { width:4px; }
+    #ai-log::-webkit-scrollbar-thumb { background:var(--player-2); border-radius:2px; }
+
+    .log-header{
+      color:var(--player-2); font-weight:bold; border-bottom:1px solid #444;
+      margin-bottom:8px; padding-bottom:4px; position:sticky; top:0; background:rgba(0,0,0,0.9);
+      font-size:0.8rem; text-align:center; letter-spacing:1px;
+    }
+    .log-entry{ margin-bottom:12px; border-left:2px solid #00ffcc; padding-left:8px; }
+    .score-val{ color:#f0f; font-weight:bold; }
+    .math-step{ color:#aaa; font-size:0.65rem; display:block; margin-top:2px; line-height:1.15; }
+    .pip-line{ color:#fff; font-size:0.65rem; display:block; margin-top:2px; border-top:1px solid #333; padding-top:2px; }
+    .alt-line{ color:#66ccff; font-size:0.6rem; opacity:0.7; margin-top:4px; font-style:italic; }
+
+    #turn-indicator{
+      position:absolute; top:env(safe-area-inset-top, 15px);
+      left:50%; transform:translateX(-50%);
+      color:white; font-weight:bold; text-transform:uppercase; letter-spacing:2px;
+      text-shadow:0 0 15px var(--player-2); z-index:100; text-align:center;
     }
 
-    body, html {
-        margin: 0; padding: 0; width: 100%; height: 100%;
-        background: #050510;
-        font-family: 'Segoe UI', sans-serif;
-        overflow: hidden; display: flex; justify-content: center; align-items: center;
+    #game-container{
+      width:92vw; height:82vh; max-width:1100px;
+      background-image:linear-gradient(rgba(10,10,30,0.6), rgba(10,10,30,0.6)), url('1.jpeg');
+      background-size:100% 100%;
+      border:3px solid rgba(255,255,255,0.2); box-shadow:0 0 50px rgba(0,0,0,0.7);
+      display:flex; position:relative; backdrop-filter:blur(5px); border-radius:12px;
     }
 
-    #turn-indicator {
-        position: absolute; top: env(safe-area-inset-top, 15px); 
-        left: 50%; transform: translateX(-50%);
-        color: white; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;
-        text-shadow: 0 0 15px var(--player-2); z-index: 100; text-align: center;
+    .board-half{ flex:1; display:flex; flex-direction:column; z-index:1; }
+    .quadrant{ flex:1; display:flex; justify-content:space-around; position:relative; }
+    .point{ width:14%; height:100%; position:relative; display:flex; justify-content:center; cursor:pointer; z-index:5; }
+
+    .triangle-shape{ position:absolute; width:100%; height:85%; z-index:1; opacity:0.9; pointer-events:none; }
+    .top-quadrant .triangle-shape{ clip-path:polygon(0 0, 100% 0, 50% 100%); top:0; }
+    .bottom-quadrant .triangle-shape{ clip-path:polygon(50% 0, 0 100%, 100% 100%); bottom:0; }
+
+    .color-pink{ background:linear-gradient(to bottom, var(--player-1), rgba(235, 149, 228, 0.2)); }
+    .color-turquoise{ background:linear-gradient(to bottom, var(--player-2), rgba(96, 207, 210, 0.4)); }
+    .bottom-quadrant .color-pink{ background:linear-gradient(to top, var(--player-1), rgba(235, 149, 228, 0.1)); }
+    .bottom-quadrant .color-turquoise{ background:linear-gradient(to top, var(--player-2), rgba(96, 207, 210, 0.1)); }
+
+    .checker-stack{ position:absolute; inset:0; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; pointer-events:none; z-index:10; }
+    .bottom-quadrant .checker-stack{ flex-direction:column-reverse; }
+    .edge-spacer{ height:15px; width:100%; flex-shrink:0; }
+
+    .checker{
+      width:clamp(16px, 3.8vw, 36px); height:clamp(16px, 3.8vw, 36px);
+      border-radius:50%; margin:-6px 0;
+      box-shadow:0 4px 8px rgba(0,0,0,0.8), inset 0 -2px 5px rgba(0,0,0,0.3);
+      flex-shrink:0; position:relative;
+    }
+    .white-checker{ background:radial-gradient(circle at 30% 30%, #ffffff 0%, #f0f0f0 20%, #bbbbbb 60%, #999999 100%); border:1px solid rgba(255,255,255,0.8); }
+    .black-checker{ background:radial-gradient(circle at 30% 30%, #666666 0%, #222222 30%, #050505 70%, #000000 100%); border:1px solid rgba(255,255,255,0.1); }
+    .checker.selected{ outline:3px solid white; box-shadow:0 0 25px white; z-index:50; transform:scale(1.1); }
+
+    .brain-marker{
+      position:absolute;
+      font-size:clamp(18px, 5vw, 32px);
+      color:rgba(200,200,200,0.6);
+      font-weight:bold;
+      top:50%; left:50%;
+      transform:translate(-50%, -50%);
+      z-index:100; pointer-events:none;
+      text-shadow:0 0 10px rgba(0,0,0,0.9);
     }
 
-    #game-container {
-        width: 92vw; height: 82vh; max-width: 1100px;
-        margin-left: env(safe-area-inset-left); margin-right: env(safe-area-inset-right);
-        background-image: linear-gradient(rgba(10, 10, 30, 0.6), rgba(10, 10, 30, 0.6)), url('1.jpeg');
-        background-size: 100% 100%; background-position: center;
-        border: 3px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 50px rgba(0, 0, 0, 0.7);
-        display: flex; position: relative; backdrop-filter: blur(5px); border-radius: 12px;
+    #bar{
+      width:70px; background:rgba(255,255,255,0.05);
+      border-left:2px solid rgba(255,255,255,0.1); border-right:2px solid rgba(255,255,255,0.1);
+      z-index:2; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:20px;
     }
+    .bar-section{ width:100%; display:flex; align-items:center; cursor:pointer; min-height:150px; position:relative; }
+    #bar-white{ flex-direction:column-reverse; justify-content:flex-start; }
+    #bar-black{ flex-direction:column; justify-content:flex-start; }
 
-    .board-half { flex: 1; display: flex; flex-direction: column; z-index: 1; }
-    .quadrant { flex: 1; display: flex; justify-content: space-around; position: relative; }
-    .point { width: 14%; height: 100%; position: relative; display: flex; justify-content: center; cursor: pointer; z-index: 5; }
-
-    /* --- DREIECKE SHINE --- */
-    .triangle-shape { position: absolute; width: 100%; height: 85%; z-index: 1; opacity: 0.9; pointer-events: none; }
-    .top-quadrant .triangle-shape { clip-path: polygon(0 0, 100% 0, 50% 100%); top: 0; }
-    .bottom-quadrant .triangle-shape { clip-path: polygon(50% 0, 0 100%, 100% 100%); bottom: 0; }
-
-    .color-pink { background: linear-gradient(to bottom, var(--player-1), rgba(235, 149, 228, 0.2)); }
-    .color-turquoise { background: linear-gradient(to bottom, var(--player-2), rgba(96, 207, 210, 0.4)); }
-    .bottom-quadrant .color-pink { background: linear-gradient(to top, var(--player-1), rgba(235, 149, 228, 0.1)); }
-    .bottom-quadrant .color-turquoise { background: linear-gradient(to top, var(--player-2), rgba(96, 207, 210, 0.1)); }
-
-    .checker-stack { position: absolute; inset: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; pointer-events: none; z-index: 10; }
-    .bottom-quadrant .checker-stack { flex-direction: column-reverse; }
-    .edge-spacer { height: 15px; width: 100%; flex-shrink: 0; }
-
-    /* --- GLOSSY CHECKERS --- */
-    .checker {
-        width: clamp(16px, 3.8vw, 36px); height: clamp(16px, 3.8vw, 36px);
-        border-radius: 50%; margin: -6px 0; 
-        box-shadow: 0 4px 8px rgba(0,0,0,0.8), inset 0 -2px 5px rgba(0,0,0,0.3); 
-        flex-shrink: 0; position: relative;
+    #dice-container{ display:flex; flex-direction:column; gap:15px; cursor:pointer; }
+    .die{
+      width:35px; height:35px; background:white; border-radius:6px;
+      display:grid; grid-template-columns:repeat(3, 1fr); grid-template-rows:repeat(3, 1fr);
+      padding:5px; box-sizing:border-box; box-shadow:0 4px 10px rgba(0,0,0,0.5);
     }
-    
-    .white-checker { 
-        background: radial-gradient(circle at 30% 30%, #ffffff 0%, #f0f0f0 20%, #bbbbbb 60%, #999999 100%); 
-        border: 1px solid rgba(255,255,255,0.8);
-    }
-    
-    .black-checker { 
-        background: radial-gradient(circle at 30% 30%, #666666 0%, #222222 30%, #050505 70%, #000000 100%); 
-        border: 1px solid rgba(255,255,255,0.1);
-    }
+    .dot{ background:#1a1a1a; border-radius:50%; width:5px; height:5px; align-self:center; justify-self:center; }
+    .die.rolling{ animation:roll 0.4s infinite linear; }
+    @keyframes roll{ 0%{ transform:rotate(0deg);} 100%{ transform:rotate(360deg);} }
 
-    .checker::after { /* Extra Glanz-Reflektion */
-        content: ""; position: absolute; top: 10%; left: 15%; width: 40%; height: 25%;
-        background: linear-gradient(to bottom, rgba(255,255,255,0.4), transparent);
-        border-radius: 50% 50% 60% 60%;
-    }
+    #off-board{ width:40px; background:rgba(0,0,0,0.2); display:flex; flex-direction:column; justify-content:space-between; padding:10px 0; }
+    .off-section{ flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer; }
+    .off-checker{ width:30px; height:10px; border-radius:2px; border:1px solid rgba(255,255,255,0.3); box-shadow:inset 0 0 5px rgba(0,0,0,0.5); }
 
-    .checker.selected { outline: 3px solid white; box-shadow: 0 0 25px white; z-index: 50; transform: scale(1.1); }
+    .point.possible-target-pink .triangle-shape{ filter:brightness(1.3) drop-shadow(0 0 15px var(--player-1)); opacity:1 !important; }
+    .point.possible-target-turquoise .triangle-shape{ filter:brightness(1.3) drop-shadow(0 0 15px var(--player-2)); opacity:1 !important; }
 
-    #bar { width: 70px; background: rgba(255, 255, 255, 0.05); border-left: 2px solid rgba(255, 255, 255, 0.1); border-right: 2px solid rgba(255, 255, 255, 0.1); z-index: 2; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; }
-    .bar-section { width: 100%; display: flex; align-items: center; cursor: pointer; min-height: 150px; }
-    #bar-white { flex-direction: column-reverse; justify-content: flex-start; }
-    #bar-black { flex-direction: column; justify-content: flex-start; }
-
-    #dice-container { display: flex; flex-direction: column; gap: 15px; cursor: pointer; }
-    .die { width: 35px; height: 35px; background: white; border-radius: 6px; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); padding: 5px; box-sizing: border-box; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-    .dot { background: #1a1a1a; border-radius: 50%; width: 5px; height: 5px; align-self: center; justify-self: center; }
-    .die.rolling { animation: roll 0.4s infinite linear; }
-    @keyframes roll { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-    #off-board { width: 40px; background: rgba(0,0,0,0.2); display: flex; flex-direction: column; justify-content: space-between; padding: 10px 0; }
-    .off-section { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
-    .off-checker { width: 30px; height: 10px; border-radius: 2px; border: 1px solid rgba(255,255,255,0.3); box-shadow: inset 0 0 5px rgba(0,0,0,0.5); }
-
-/* Intensiver Neon-Glow für mögliche Zielfelder */
-.point.possible-target-pink .triangle-shape {
-    filter: brightness(1.3) drop-shadow(0 0 15px var(--player-1));
-    opacity: 1 !important;
-    animation: neon-pulse-pink 1.5s infinite alternate;
-}
-
-.point.possible-target-turquoise .triangle-shape {
-    filter: brightness(1.3) drop-shadow(0 0 15px var(--player-2));
-    opacity: 1 !important;
-    animation: neon-pulse-turquoise 1.5s infinite alternate;
-}
-
-@keyframes neon-pulse-pink {
-    from { filter: brightness(1.1) drop-shadow(0 0 5px var(--player-1)); }
-    to { filter: brightness(1.5) drop-shadow(0 0 20px var(--player-1)); }
-}
-
-@keyframes neon-pulse-turquoise {
-    from { filter: brightness(1.1) drop-shadow(0 0 5px var(--player-2)); }
-    to { filter: brightness(1.5) drop-shadow(0 0 20px var(--player-2)); }
-}
-
-
-/* Win-Overlay */
-#win-overlay {
-    position: fixed; inset: 0; background: rgba(5, 5, 20, 0.95);
-    display: none; flex-direction: column; justify-content: center; align-items: center;
-    z-index: 2000; backdrop-filter: blur(10px); transition: all 0.5s ease;
-}
-
-.win-content { text-align: center; padding: 20px; }
-
-#win-message {
-    font-size: clamp(3rem, 10vw, 6rem);
-    font-weight: 900;
-    margin-bottom: 10px;
-    text-transform: uppercase;
-    letter-spacing: 5px;
-    color: #fff;
-}
-
-#win-subtext {
-    color: #fff; font-size: 1.2rem; margin-bottom: 40px; opacity: 0.8;
-}
-
-#restart-btn {
-    background: transparent; border: 2px solid #fff; color: #fff;
-    padding: 15px 40px; font-size: 1.5rem; font-weight: bold; cursor: pointer;
-    text-transform: uppercase; letter-spacing: 3px;
-    transition: all 0.3s; box-shadow: 0 0 15px rgba(255,255,255,0.2);
-}
-
-#restart-btn:hover {
-    background: #fff; color: #000; box-shadow: 0 0 30px #fff;
-}
-
-/* Der Neon-Flicker-Effekt */
-@keyframes neon-flicker {
-    0%, 18%, 22%, 25%, 53%, 57%, 100% {
-        text-shadow: 0 0 7px #fff, 0 0 10px #fff, 0 0 21px #fff, 0 0 42px var(--glow), 0 0 82px var(--glow), 0 0 92px var(--glow);
-    }
-    20%, 24%, 55% { text-shadow: none; }
-}
-
-.animate-flicker { animation: neon-flicker 2s infinite alternate; }
-
-</style>
-
+    #win-overlay{ position:fixed; inset:0; background:rgba(5,5,20,0.95); display:none; flex-direction:column; justify-content:center; align-items:center; z-index:2000; backdrop-filter:blur(10px); }
+    #win-message{ font-size:clamp(3rem, 10vw, 6rem); font-weight:900; color:#fff; }
+    #restart-btn{ background:transparent; border:2px solid #fff; color:#fff; padding:15px 40px; font-size:1.5rem; cursor:pointer; }
+  </style>
 </head>
+
 <body>
 
-<div id="turn-indicator">Player: <span id="p-name" style="color: var(--player-1)">PINKY</span><br><small id="p-moves">Click dice to roll</small></div>
+<div id="ai-log">
+  <div class="log-header">BRAIN_ANALYSIS</div>
+  <div id="log-content"></div>
+</div>
 
-    <div id="game-container">
-        <div class="board-half">
-            <div class="quadrant top-quadrant" id="q-upper-left"></div>
-            <div class="quadrant bottom-quadrant" id="q-lower-left"></div>
-        </div>
-        
-        <div id="bar">
-            <div id="bar-white" class="bar-section" onclick="handleBarClick('white')"></div>
-            <div id="dice-container" onclick="rollDice()">
-                <div id="die1" class="die"></div>
-                <div id="die2" class="die"></div>
-            </div>
-            <div id="bar-black" class="bar-section" onclick="handleBarClick('black')"></div>
-        </div>
+<div id="analysis-toggle-wrap">
+  <label class="analysis-toggle">
+    <input type="checkbox" id="analysis-toggle">
+    <span class="analysis-slider"></span>
+    <span class="analysis-label">Analyse</span>
+  </label>
+</div>
 
-        <div class="board-half">
-            <div class="quadrant top-quadrant" id="q-upper-right"></div>
-            <div class="quadrant bottom-quadrant" id="q-lower-right"></div>
-        </div>
+<div id="turn-indicator">
+  Player: <span id="p-name" style="color: var(--player-1)">PINKY</span><br>
+  <small id="p-moves">Click dice to roll</small>
+</div>
 
-        <div id="off-board">
-            <div id="off-black" class="off-section"></div>
-            <div id="off-white" class="off-section"></div>
-        </div>
+<div id="game-container">
+  <div class="board-half">
+    <div class="quadrant top-quadrant" id="q-upper-left"></div>
+    <div class="quadrant bottom-quadrant" id="q-lower-left"></div>
+  </div>
+
+  <div id="bar">
+    <div id="bar-white" class="bar-section" onclick="handleBarClick('white')"></div>
+
+    <div id="dice-container" onclick="rollDice()">
+      <div id="die1" class="die"></div>
+      <div id="die2" class="die"></div>
     </div>
 
-    <script>
-        let gameState = {
-            points: {
-                1: { count: 2, color: 'black' }, 12: { count: 5, color: 'black' }, 17: { count: 3, color: 'black' }, 19: { count: 5, color: 'black' },
-                6: { count: 5, color: 'white' }, 8: { count: 3, color: 'white' }, 13: { count: 5, color: 'white' }, 24: { count: 2, color: 'white' }
-            },
-            bar: { white: 0, black: 0 }, off: { white: 0, black: 0 },
-            currentPlayer: 'white', currentRoll: [], selectedPoint: null,
-            diceRolled: false, isAnimating: false
-        };
+    <div id="bar-black" class="bar-section" onclick="handleBarClick('black')"></div>
+  </div>
 
-        const patterns = { 1:[4], 2:[0,8], 3:[0,4,8], 4:[0,2,6,8], 5:[0,2,4,6,8], 6:[0,2,3,5,6,8] };
+  <div class="board-half">
+    <div class="quadrant top-quadrant" id="q-upper-right"></div>
+    <div class="quadrant bottom-quadrant" id="q-lower-right"></div>
+  </div>
 
-        function drawDie(id, val) {
-            const el = document.getElementById(id); el.innerHTML = '';
-            if(!val) return;
-            patterns[val].forEach(p => {
-                const d = document.createElement('div'); d.className='dot';
-                d.style.gridColumn = (p % 3) + 1; d.style.gridRow = Math.floor(p / 3) + 1;
-                el.appendChild(d);
-            });
+  <div id="off-board">
+    <div id="off-black" class="off-section" onclick="handleOffClick('black')"></div>
+    <div id="off-white" class="off-section" onclick="handleOffClick('white')"></div>
+  </div>
+</div>
+
+<script>
+  let gameState = {
+    points: {
+      1: { count: 2, color: 'black' }, 12: { count: 5, color: 'black' }, 17: { count: 3, color: 'black' }, 19: { count: 5, color: 'black' },
+      6: { count: 5, color: 'white' }, 8: { count: 3, color: 'white' }, 13: { count: 5, color: 'white' }, 24: { count: 2, color: 'white' }
+    },
+    bar: { white: 0, black: 0 },
+    off: { white: 0, black: 0 },
+    currentPlayer: 'white',
+    currentRoll: [],
+    selectedPoint: null,
+    diceRolled: false,
+    isAnimating: false,
+    brainHistory: [],
+    aiPlan: []
+  };
+
+  const patterns = { 1:[4], 2:[0,8], 3:[0,4,8], 4:[0,2,6,8], 5:[0,2,4,6,8], 6:[0,2,3,5,6,8] };
+
+function isAnalysisOn() {
+  const cb = document.getElementById('analysis-toggle');
+  return !!cb && cb.checked;
+}
+
+function syncAnalysisUI() {
+  const panel = document.getElementById('ai-log');
+  if (!panel) return;
+  panel.style.display = isAnalysisOn() ? 'block' : 'none';
+}
+
+// Toggle initialisieren (Standard: AUS)
+const analysisCb = document.getElementById('analysis-toggle');
+if (analysisCb) {
+  analysisCb.checked = false;
+  analysisCb.addEventListener('change', () => {
+    syncAnalysisUI();
+  });
+}
+syncAnalysisUI();
+
+
+  function drawDie(id, val) {
+    const el = document.getElementById(id); el.innerHTML = '';
+    if(!val) return;
+    patterns[val].forEach(p => {
+      const d = document.createElement('div'); d.className='dot';
+      d.style.gridColumn = (p % 3) + 1; d.style.gridRow = Math.floor(p / 3) + 1;
+      el.appendChild(d);
+    });
+  }
+
+  function getPipCount(player) {
+    let pips = gameState.bar[player] * 25;
+    for (let i = 1; i <= 24; i++) {
+      if (gameState.points[i] && gameState.points[i].color === player) {
+        pips += (player === 'white' ? i : (25 - i)) * gameState.points[i].count;
+      }
+    }
+    return pips;
+  }
+
+  function getPipCountFor(st, player) {
+    let pips = st.bar[player] * 25;
+    for (let i = 1; i <= 24; i++) {
+      if (st.points[i] && st.points[i].color === player) {
+        pips += (player === 'white' ? i : (25 - i)) * st.points[i].count;
+      }
+    }
+    return pips;
+  }
+
+  function rollDice() {
+    if (gameState.diceRolled || gameState.isAnimating) return;
+
+    // Reset AI plan each new black turn roll
+if (gameState.currentPlayer === 'white') {
+  // Kreuze sofort beim Würfeln löschen (nicht erst beim Zug)
+  gameState.brainHistory = [];
+  gameState.aiPlan = [];
+  renderBoard(); // <- wichtig: UI sofort neu zeichnen, damit X direkt weg sind
+
+  // Analysefenster nur anzeigen, wenn eingeschaltet (siehe Toggle unten)
+  if (!isAnalysisOn()) document.getElementById('ai-log').style.display = 'none';
+}
+
+if (gameState.currentPlayer === 'black') {
+  gameState.brainHistory = [];
+  gameState.aiPlan = [];
+
+  // Log immer leeren (auch wenn Analyse aus ist)
+  document.getElementById('log-content').innerHTML = '';
+
+  // Analysefenster nur bei EIN zeigen
+  syncAnalysisUI();
+}
+
+    const d1 = Math.floor(Math.random() * 6) + 1;
+    const d2 = Math.floor(Math.random() * 6) + 1;
+
+    document.querySelectorAll('.die').forEach(d => d.classList.add('rolling'));
+    setTimeout(() => {
+      document.querySelectorAll('.die').forEach(d => d.classList.remove('rolling'));
+      drawDie('die1', d1); drawDie('die2', d2);
+      gameState.currentRoll = (d1 === d2) ? [d1, d1, d1, d1] : [d1, d2];
+      gameState.diceRolled = true;
+
+      if (!canMoveAnywhere()) {
+        document.getElementById('p-moves').innerText = "NO MOVES POSSIBLE!";
+        setTimeout(endTurn, 1500);
+      } else {
+        updateUI();
+        if(gameState.currentPlayer === 'black') setTimeout(makeAIMove, 500);
+      }
+    }, 600);
+  }
+
+  function canMoveAnywhere() {
+    if (!gameState.currentRoll.length) return false;
+    const rolls = [...new Set(gameState.currentRoll)];
+    const player = gameState.currentPlayer;
+
+    if (gameState.bar[player] > 0) {
+      return rolls.some(r => isMoveLegal('bar', player === 'white' ? 25 - r : r, r));
+    }
+
+    for (let p in gameState.points) {
+      if (gameState.points[p].color === player) {
+        if (rolls.some(r => isMoveLegal(p, player === 'white' ? p - r : parseInt(p) + r, r))) return true;
+      }
+    }
+    return false;
+  }
+
+  function isHomeReady() {
+    if (gameState.bar[gameState.currentPlayer] > 0) return false;
+    for (let p in gameState.points) {
+      if (gameState.points[p].color === gameState.currentPlayer) {
+        if (gameState.currentPlayer === 'white' && p > 6) return false;
+        if (gameState.currentPlayer === 'black' && p < 19) return false;
+      }
+    }
+    return true;
+  }
+
+  function isMoveLegal(from, to, dist) {
+    if (to < 1 || to > 24) {
+      if (!isHomeReady()) return false;
+      if (gameState.currentPlayer === 'white') {
+        if (to === 0) return true;
+        if (to < 0) {
+          for (let i = 6; i > from; i--) if (gameState.points[i]?.color === 'white') return false;
+          return true;
         }
-
-        function rollDice() {
-            if (gameState.diceRolled || gameState.isAnimating) return;
-            const d1 = Math.floor(Math.random() * 6) + 1;
-            const d2 = Math.floor(Math.random() * 6) + 1;
-            document.querySelectorAll('.die').forEach(d => d.classList.add('rolling'));
-            setTimeout(() => {
-                document.querySelectorAll('.die').forEach(d => d.classList.remove('rolling'));
-                drawDie('die1', d1); drawDie('die2', d2);
-                gameState.currentRoll = (d1 === d2) ? [d1, d1, d1, d1] : [d1, d2];
-                gameState.diceRolled = true;
-                if (!canMoveAnywhere()) {
-                    document.getElementById('p-moves').innerText = "NO MOVES POSSIBLE!";
-                    setTimeout(endTurn, 1500);
-                } else { updateUI(); if(gameState.currentPlayer === 'black') setTimeout(makeAIMove, 1000); }
-            }, 600);
+      } else {
+        if (to === 25) return true;
+        if (to > 25) {
+          for (let i = 19; i < from; i++) if (gameState.points[i]?.color === 'black') return false;
+          return true;
         }
+      }
+      return false;
+    }
+    const target = gameState.points[to];
+    return !target || target.color === gameState.currentPlayer || target.count === 1;
+  }
 
-        function canMoveAnywhere() {
-            if (!gameState.currentRoll || gameState.currentRoll.length === 0) return false;
-            const rolls = [...new Set(gameState.currentRoll)];
-            const player = gameState.currentPlayer;
-            if (gameState.bar[player] > 0) return rolls.some(r => isMoveLegal('bar', player === 'white' ? 25 - r : r, r));
-            for (let p in gameState.points) {
-                if (gameState.points[p].color === player) {
-                    if (rolls.some(r => {
-                        const to = player === 'white' ? p - r : parseInt(p) + r;
-                        return isMoveLegal(p, to, r);
-                    })) return true;
-                }
-            }
-            return false;
-        }
+  function handleBarClick(color) {
+    if (gameState.currentPlayer === color && gameState.bar[color] > 0 && gameState.diceRolled) {
+      gameState.selectedPoint = 'bar'; renderBoard();
+    }
+  }
 
-        function isHomeReady() {
-            if (gameState.bar[gameState.currentPlayer] > 0) return false;
-            for (let p in gameState.points) if (gameState.points[p].color === gameState.currentPlayer && (gameState.currentPlayer === 'white' ? p > 6 : p < 19)) return false;
-            return true;
-        }
+  function handleOffClick(color) {
+    if (gameState.currentPlayer === color && gameState.selectedPoint !== null) {
+      const targets = getLegalTargets(gameState.selectedPoint);
+      const offMove = targets.find(t => t.to < 1 || t.to > 24);
+      if (offMove) animateAndMove(gameState.selectedPoint, offMove.to, offMove.dist);
+    }
+  }
 
-        function isMoveLegal(from, to, dist) {
-            if (to < 1 || to > 24) {
-                if (!isHomeReady()) return false;
-                if (gameState.currentPlayer === 'white') {
-                    if (to === 0) return true;
-                    if (to < 0) { for (let i = 6; i > from; i--) if (gameState.points[i]?.color === 'white') return false; return true; }
-                } else {
-                    if (to === 25) return true;
-                    if (to > 25) { for (let i = 19; i < from; i++) if (gameState.points[i]?.color === 'black') return false; return true; }
-                }
-                return false;
-            }
-            const target = gameState.points[to];
-            return !target || target.color === gameState.currentPlayer || target.count === 1;
-        }
-
-        function handleBarClick(color) {
-            if (gameState.currentPlayer === color && gameState.bar[color] > 0 && gameState.diceRolled) {
-                gameState.selectedPoint = 'bar'; renderBoard();
-            }
-        }
-
-// Neue Funktion: Berechnet alle legalen Ziele für einen gewählten Punkt
-function getLegalTargets(from) {
+  function getLegalTargets(from) {
     if (!gameState.diceRolled || from === null) return [];
     let targets = [];
     let rolls = [...new Set(gameState.currentRoll)];
-    
     rolls.forEach(r => {
-        let to;
-        if (from === 'bar') {
-            to = gameState.currentPlayer === 'white' ? 25 - r : r;
-        } else {
-            to = gameState.currentPlayer === 'white' ? from - r : parseInt(from) + r;
-        }
-        
-        if (isMoveLegal(from, to, r)) {
-            targets.push({ to, dist: r });
-        }
+      let to = (from === 'bar')
+        ? (gameState.currentPlayer === 'white' ? 25 - r : r)
+        : (gameState.currentPlayer === 'white' ? from - r : parseInt(from) + r);
+      if (isMoveLegal(from, to, r)) targets.push({ to, dist: r });
     });
     return targets;
-}
+  }
 
-
-// Überarbeitete handlePointClick
-async function handlePointClick(num) {
+  async function handlePointClick(num) {
     if (!gameState.diceRolled || gameState.isAnimating || gameState.currentPlayer === 'black') return;
 
+    if (gameState.selectedPoint === num) {
+      const legalTargets = getLegalTargets(num);
+      const bearOffMove = legalTargets.find(t => t.to < 1 || t.to > 24);
+      if (bearOffMove) {
+        await animateAndMove(num, bearOffMove.to, bearOffMove.dist);
+        return;
+      }
+    }
+
     const legalTargets = getLegalTargets(gameState.selectedPoint);
-    const move = legalTargets.find(t => t.to === num || ( (num < 1 || num > 24) && t.to === (num < 1 ? 0 : 25) ));
+    const move = legalTargets.find(t => t.to === num);
 
     if (move) {
-        await animateAndMove(gameState.selectedPoint, move.to, move.dist);
-    } else {
-        // Auswahl-Logik
-        if (gameState.bar[gameState.currentPlayer] > 0) {
-            // Wenn man auf der Bar ist, kann man nur die Bar auswählen
-            return; 
-        }
-        if (gameState.points[num]?.color === gameState.currentPlayer) {
-            gameState.selectedPoint = (gameState.selectedPoint === num) ? null : num;
-            renderBoard();
-        }
+      await animateAndMove(gameState.selectedPoint, move.to, move.dist);
+    } else if (gameState.bar[gameState.currentPlayer] === 0 && gameState.points[num]?.color === gameState.currentPlayer) {
+      gameState.selectedPoint = (gameState.selectedPoint === num) ? null : num;
+      renderBoard();
     }
-}
+  }
 
-        async function animateAndMove(from, to, dist) {
-            gameState.isAnimating = true;
-            let movingChecker;
-            if (from === 'bar') movingChecker = document.getElementById(`bar-${gameState.currentPlayer}`).lastElementChild;
-            else movingChecker = document.querySelector(`[data-point="${from}"] .checker-stack`).lastElementChild;
-            
-            const startRect = movingChecker.getBoundingClientRect();
-            gameState.selectedPoint = null;
+  async function animateAndMove(from, to, dist) {
+    gameState.isAnimating = true;
 
-            // Check if it's a "Hit"
-            let hitOccurred = false;
-            let hitRect = null;
-            if (to >= 1 && to <= 24 && gameState.points[to] && gameState.points[to].color !== gameState.currentPlayer) {
-                hitOccurred = true;
-                hitRect = document.querySelector(`[data-point="${to}"] .checker-stack`).lastElementChild.getBoundingClientRect();
-            }
+    let movingChecker;
+    if (from === 'bar') movingChecker = document.getElementById(`bar-${gameState.currentPlayer}`).lastElementChild;
+    else movingChecker = document.querySelector(`[data-point="${from}"] .checker-stack`).lastElementChild;
 
-            executeMoveLogic(from, to, dist);
-            renderBoard();
+    if (!movingChecker) { gameState.isAnimating = false; return; }
 
-            // Animate main checker
-            let targetChecker = (to < 1 || to > 24) ? document.getElementById(`off-${gameState.currentPlayer}`).lastElementChild : document.querySelector(`[data-point="${to}"] .checker-stack`).lastElementChild;
-            const endRect = targetChecker.getBoundingClientRect();
-            
-            const mainAnim = targetChecker.animate([
-                { transform: `translate(${startRect.left - endRect.left}px, ${startRect.top - endRect.top}px)` },
-                { transform: 'translate(0, 0)' }
-            ], { duration: 300, easing: 'ease-out' });
-
-            // Animate hit checker to bar
-            if (hitOccurred) {
-                const otherColor = gameState.currentPlayer === 'white' ? 'black' : 'white';
-                const barTarget = document.getElementById(`bar-${otherColor}`).lastElementChild;
-                const barRect = barTarget.getBoundingClientRect();
-                barTarget.animate([
-                    { transform: `translate(${hitRect.left - barRect.left}px, ${hitRect.top - barRect.top}px)` },
-                    { transform: 'translate(0, 0)' }
-                ], { duration: 400, easing: 'ease-in-out' });
-            }
-
-            mainAnim.onfinish = () => {
-                gameState.isAnimating = false;
-                if (gameState.currentRoll.length === 0 || !canMoveAnywhere()) setTimeout(endTurn, 600);
-                else if (gameState.currentPlayer === 'black') setTimeout(makeAIMove, 600);
-                else updateUI();
-            };
-        }
-
-        function executeMoveLogic(from, to, dist) {
-            if (from === 'bar') gameState.bar[gameState.currentPlayer]--;
-            else { gameState.points[from].count--; if (gameState.points[from].count === 0) delete gameState.points[from]; }
-            
-            if (to < 1 || to > 24) { gameState.off[gameState.currentPlayer]++; }
-            else {
-                if (gameState.points[to] && gameState.points[to].color !== gameState.currentPlayer) {
-                    gameState.bar[gameState.currentPlayer === 'white' ? 'black' : 'white']++;
-                    gameState.points[to] = { count: 1, color: gameState.currentPlayer };
-                } else {
-                    if (!gameState.points[to]) gameState.points[to] = { count: 0, color: gameState.currentPlayer };
-                    gameState.points[to].count++;
-                }
-            }
-            gameState.currentRoll.splice(gameState.currentRoll.indexOf(dist), 1);
-        }
-
-function endTurn() {
-    // Sieg-Check
-    if (gameState.off.white === 15 || gameState.off.black === 15) {
-        showWinOverlay(gameState.off.white === 15 ? 'white' : 'black');
-        return;
+    // Marker für Brain setzen
+    if (gameState.currentPlayer === 'black') {
+      gameState.brainHistory.push(from === 'bar' ? 'bar' : parseInt(from));
     }
-    
-    gameState.currentPlayer = gameState.currentPlayer === 'white' ? 'black' : 'white';
-    gameState.diceRolled = false; 
-    gameState.currentRoll = []; 
+
+    const startRect = movingChecker.getBoundingClientRect();
     gameState.selectedPoint = null;
-    
-    renderBoard(); 
-    updateUI();
-    
-    if(gameState.currentPlayer === 'black') checkAITurn();
-}
 
-function showWinOverlay(winner) {
-    const overlay = document.getElementById('win-overlay');
-    const msg = document.getElementById('win-message');
-    const sub = document.getElementById('win-subtext');
-    const btn = document.getElementById('restart-btn');
-    
-    const isPinky = winner === 'white';
-    const color = isPinky ? 'var(--player-1)' : 'var(--player-2)';
-    
-    msg.innerText = isPinky ? "PINKY GEWINNT!" : "BRAIN GEWINNT!";
-    sub.innerText = isPinky ? "Die Weltherrschaft ist zum Greifen nah." : "Narf! Brain hat die Weltherrschaft!";
-    
-    // Setze die Neon-Farbe dynamisch
-    msg.style.setProperty('--glow', color);
-    msg.classList.add('animate-flicker');
-    btn.style.borderColor = color;
-    btn.style.boxShadow = `0 0 15px ${color}`;
+    let hitOccurred = false;
+    let hitRect = null;
+    if (to >= 1 && to <= 24 && gameState.points[to] && gameState.points[to].color !== gameState.currentPlayer) {
+      hitOccurred = true;
+      hitRect = document.querySelector(`[data-point="${to}"] .checker-stack`).lastElementChild.getBoundingClientRect();
+    }
 
-    overlay.style.display = 'flex';
-}
+    executeMoveLogic(from, to, dist);
+    renderBoard();
 
+    let targetChecker = (to < 1 || to > 24)
+      ? document.getElementById(`off-${gameState.currentPlayer}`).lastElementChild
+      : document.querySelector(`[data-point="${to}"] .checker-stack`).lastElementChild;
+    const endRect = targetChecker.getBoundingClientRect();
 
-        function updateUI() {
-            const isW = gameState.currentPlayer === 'white';
-            const nameEl = document.getElementById('p-name');
-            nameEl.innerText = isW ? 'PINKY' : 'BRAIN';
-            nameEl.style.color = isW ? 'var(--player-1)' : 'var(--player-2)';
-            document.getElementById('p-moves').innerText = gameState.diceRolled ? `Moves: ${gameState.currentRoll.join(', ')}` : "Roll the dice";
-            renderBar('white'); renderBar('black'); renderOff();
-        }
+    const mainAnim = targetChecker.animate([
+      { transform: `translate(${startRect.left - endRect.left}px, ${startRect.top - endRect.top}px)`, opacity: 1 },
+      { transform: 'translate(0, 0)', opacity: 1 }
+    ], { duration: 300, easing: 'ease-out' });
 
-        function renderBar(color) {
-            const el = document.getElementById(`bar-${color}`); el.innerHTML = '';
-            for (let i = 0; i < gameState.bar[color]; i++) {
-                const c = document.createElement('div'); c.className = `checker ${color}-checker`;
-                if (gameState.selectedPoint === 'bar' && gameState.currentPlayer === color && i === gameState.bar[color]-1) c.classList.add('selected');
-                el.appendChild(c);
-            }
-        }
+    if (hitOccurred) {
+      const otherColor = gameState.currentPlayer === 'white' ? 'black' : 'white';
+      const barTarget = document.getElementById(`bar-${otherColor}`).lastElementChild;
+      const barRect = barTarget.getBoundingClientRect();
+      barTarget.animate([
+        { transform: `translate(${hitRect.left - barRect.left}px, ${hitRect.top - barRect.top}px)` },
+        { transform: 'translate(0, 0)' }
+      ], { duration: 400, easing: 'ease-in-out' });
+    }
 
-        function renderOff() {
-            ['white', 'black'].forEach(c => {
-                const el = document.getElementById(`off-${c}`); el.innerHTML = '';
-                for (let i = 0; i < gameState.off[c]; i++) {
-                    const ch = document.createElement('div'); ch.className = 'off-checker';
-                    ch.style.backgroundColor = c === 'white' ? 'var(--player-1)' : 'var(--player-2)';
-                    el.appendChild(ch);
-                }
-            });
-        }
+    mainAnim.onfinish = () => {
+      gameState.isAnimating = false;
+      if (gameState.currentRoll.length === 0 || !canMoveAnywhere()) setTimeout(endTurn, 400);
+      else if (gameState.currentPlayer === 'black') setTimeout(makeAIMove, 350);
+      else updateUI();
+    };
+  }
 
-// In renderBoard() fügen wir die Highlights ein:
-function renderBoard() {
+  function executeMoveLogic(from, to, dist) {
+    if (from === 'bar') gameState.bar[gameState.currentPlayer]--;
+    else {
+      gameState.points[from].count--;
+      if (gameState.points[from].count === 0) delete gameState.points[from];
+    }
+
+    if (to < 1 || to > 24) gameState.off[gameState.currentPlayer]++;
+    else {
+      if (gameState.points[to] && gameState.points[to].color !== gameState.currentPlayer) {
+        gameState.bar[gameState.currentPlayer === 'white' ? 'black' : 'white']++;
+        gameState.points[to] = { count: 1, color: gameState.currentPlayer };
+      } else {
+        if (!gameState.points[to]) gameState.points[to] = { count: 0, color: gameState.currentPlayer };
+        gameState.points[to].count++;
+      }
+    }
+    gameState.currentRoll.splice(gameState.currentRoll.indexOf(dist), 1);
+  }
+
+  function endTurn() {
+    if (gameState.off.white === 15 || gameState.off.black === 15) { showWinOverlay(gameState.off.white === 15 ? 'white' : 'black'); return; }
+    gameState.currentPlayer = gameState.currentPlayer === 'white' ? 'black' : 'white';
+    gameState.diceRolled = false;
+    gameState.currentRoll = [];
+    gameState.selectedPoint = null;
+    gameState.aiPlan = [];
+    renderBoard(); updateUI();
+    if(gameState.currentPlayer === 'black') setTimeout(rollDice, 800);
+  }
+
+  function showWinOverlay(winner) {
+    document.getElementById('win-message').innerText = winner === 'white' ? "PINKY GEWINNT!" : "BRAIN GEWINNT!";
+    document.getElementById('win-overlay').style.display = 'flex';
+  }
+
+  function updateUI() {
+    const isW = gameState.currentPlayer === 'white';
+    const nameEl = document.getElementById('p-name');
+    nameEl.innerText = isW ? 'PINKY' : 'BRAIN';
+    nameEl.style.color = isW ? 'var(--player-1)' : 'var(--player-2)';
+    document.getElementById('p-moves').innerText = gameState.diceRolled ? `Moves: ${gameState.currentRoll.join(', ')}` : "Roll the dice";
+    renderBar('white'); renderBar('black'); renderOff();
+  }
+
+  function renderBar(color) {
+    const el = document.getElementById(`bar-${color}`); el.innerHTML = '';
+    for (let i = 0; i < gameState.bar[color]; i++) {
+      const c = document.createElement('div'); c.className = `checker ${color}-checker`;
+      if (gameState.selectedPoint === 'bar' && gameState.currentPlayer === color && i === gameState.bar[color]-1) c.classList.add('selected');
+      el.appendChild(c);
+    }
+    if (color === 'black' && gameState.brainHistory.includes('bar')) {
+      const x = document.createElement('div'); x.className = 'brain-marker'; x.innerText = 'X';
+      el.appendChild(x);
+    }
+  }
+
+  function renderOff() {
+    ['white', 'black'].forEach(c => {
+      const el = document.getElementById(`off-${c}`); el.innerHTML = '';
+      for (let i = 0; i < gameState.off[c]; i++) {
+        const ch = document.createElement('div'); ch.className = 'off-checker';
+        ch.style.backgroundColor = c === 'white' ? 'var(--player-1)' : 'var(--player-2)';
+        el.appendChild(ch);
+      }
+    });
+  }
+
+  function renderBoard() {
     const layout = [
-        { id: 'q-lower-right', range: [6, 5, 4, 3, 2, 1] },
-        { id: 'q-lower-left', range: [12, 11, 10, 9, 8, 7] },
-        { id: 'q-upper-left', range: [13, 14, 15, 16, 17, 18] },
-        { id: 'q-upper-right', range: [19, 20, 21, 22, 23, 24] }
+      { id: 'q-lower-right', range: [6, 5, 4, 3, 2, 1] },
+      { id: 'q-lower-left',  range: [12, 11, 10, 9, 8, 7] },
+      { id: 'q-upper-left',  range: [13, 14, 15, 16, 17, 18] },
+      { id: 'q-upper-right', range: [19, 20, 21, 22, 23, 24] }
     ];
-
-    // Hole mögliche Ziele für den Glow
     const legalTargets = getLegalTargets(gameState.selectedPoint).map(t => t.to);
 
     layout.forEach(q => {
-        const el = document.getElementById(q.id); el.innerHTML = '';
-        q.range.forEach(num => {
-            const p = document.createElement('div'); 
-            p.className = 'point'; 
-            p.setAttribute('data-point', num);
-            
-            // Neon-Glow Farbe basierend auf Feld-Typ vergeben
-            if (legalTargets.includes(num)) {
-                p.classList.add(num % 2 === 0 ? 'possible-target-turquoise' : 'possible-target-pink');
-            }
+      const el = document.getElementById(q.id); el.innerHTML = '';
+      q.range.forEach(num => {
+        const p = document.createElement('div'); p.className = 'point'; p.setAttribute('data-point', num);
+        if (legalTargets.includes(num)) p.classList.add(num % 2 === 0 ? 'possible-target-turquoise' : 'possible-target-pink');
+        p.onclick = () => handlePointClick(num);
 
-            p.onclick = () => handlePointClick(num);
-            
-            // NEU: Doppelklick für Bearing Off
-            p.ondblclick = (e) => {
-                e.preventDefault();
-                handleBearingOff(num);
-            };
+        const tri = document.createElement('div'); tri.className = `triangle-shape ${num % 2 === 0 ? 'color-turquoise' : 'color-pink'}`;
+        const stack = document.createElement('div'); stack.className = 'checker-stack';
+        stack.appendChild(document.createElement('div')).className = 'edge-spacer';
 
-            const tri = document.createElement('div'); 
-            tri.className = `triangle-shape ${num % 2 === 0 ? 'color-turquoise' : 'color-pink'}`;
-            
-            const stack = document.createElement('div'); 
-            stack.className = 'checker-stack';
-            stack.appendChild(document.createElement('div')).className = 'edge-spacer';
+        if (gameState.points[num]) {
+          for (let i = 0; i < gameState.points[num].count; i++) {
+            const c = document.createElement('div'); c.className = `checker ${gameState.points[num].color}-checker`;
+            if (gameState.selectedPoint === num && i === gameState.points[num].count - 1) c.classList.add('selected');
+            stack.appendChild(c);
+          }
+        }
 
-            if (gameState.points[num]) {
-                for (let i = 0; i < gameState.points[num].count; i++) {
-                    const c = document.createElement('div'); 
-                    c.className = `checker ${gameState.points[num].color}-checker`;
-                    if (gameState.selectedPoint === num && i === gameState.points[num].count - 1) c.classList.add('selected');
-                    stack.appendChild(c);
-                }
-            }
-            p.appendChild(tri); p.appendChild(stack); el.appendChild(p);
-        });
+        if (gameState.brainHistory.includes(num)) {
+          const x = document.createElement('div'); x.className = 'brain-marker'; x.innerText = 'X';
+          p.appendChild(x);
+        }
+
+        p.appendChild(tri); p.appendChild(stack); el.appendChild(p);
+      });
     });
+
     renderBar('white'); renderBar('black'); renderOff();
-}
+  }
 
-// Hilfsfunktion für das Hinauswerfen per Doppelklick
-async function handleBearingOff(num) {
-    if (!gameState.diceRolled || gameState.isAnimating || !isHomeReady()) return;
-    if (gameState.points[num]?.color !== gameState.currentPlayer) return;
+  // ---------- AI HELPERS (NEW BRAIN STRATEGY + FEINTUNINGS) ----------
 
-    const rolls = [...gameState.currentRoll].sort((a, b) => a - b);
-    for (let d of rolls) {
-        const to = gameState.currentPlayer === 'white' ? num - d : parseInt(num) + d;
-        if (isMoveLegal(num, to, d) && (to < 1 || to > 24)) {
-            await animateAndMove(num, to < 1 ? 0 : 25, d);
-            return;
-        }
+  function cloneState(st) { return JSON.parse(JSON.stringify(st)); }
+
+  function isHomeReadyFor(st, player) {
+    if (st.bar[player] > 0) return false;
+    for (let p in st.points) {
+      const pt = st.points[p];
+      if (pt.color !== player) continue;
+      const n = parseInt(p);
+      if (player === 'white' && n > 6) return false;
+      if (player === 'black' && n < 19) return false;
     }
-}
-        function checkAITurn() { if (gameState.currentPlayer === 'black' && !gameState.diceRolled && !gameState.isAnimating) setTimeout(rollDice, 1200); }
+    return true;
+  }
 
-        async function makeAIMove() {
-            if (gameState.currentPlayer !== 'black' || gameState.isAnimating || !gameState.diceRolled) return;
-            if (gameState.currentRoll.length === 0) { endTurn(); return; }
-            const rolls = [...gameState.currentRoll].sort((a, b) => b - a);
-            let possibleMoves = [];
-            if (gameState.bar.black > 0) { for (let r of rolls) if (isMoveLegal('bar', r, r)) possibleMoves.push({ from: 'bar', to: r, dist: r, weight: 100 }); }
-            else {
-                for (let p in gameState.points) {
-                    if (gameState.points[p].color === 'black') {
-                        for (let r of rolls) {
-                            const to = parseInt(p) + r;
-                            if (isMoveLegal(p, to, r)) {
-                                let weight = to; if (to > 24) weight += 100;
-                                if (gameState.points[to] && gameState.points[to].count === 1) weight += 50;
-                                possibleMoves.push({ from: p, to: to, dist: r, weight: weight });
-                            }
-                        }
-                    }
-                }
-            }
-            if (possibleMoves.length > 0) {
-                possibleMoves.sort((a, b) => b.weight - a.weight);
-                await animateAndMove(possibleMoves[0].from, possibleMoves[0].to, possibleMoves[0].dist);
-            } else setTimeout(endTurn, 500);
+  function isMoveLegalFor(st, player, from, to, dist) {
+    if (to < 1 || to > 24) {
+      if (!isHomeReadyFor(st, player)) return false;
+
+      if (player === 'white') {
+        if (to === 0) return true;
+        if (to < 0) {
+          for (let i = 6; i > from; i--) if (st.points[i]?.color === 'white') return false;
+          return true;
+        }
+      } else {
+        if (to === 25) return true;
+        if (to > 25) {
+          for (let i = 19; i < from; i++) if (st.points[i]?.color === 'black') return false;
+          return true;
+        }
+      }
+      return false;
+    }
+
+    const target = st.points[to];
+    return !target || target.color === player || target.count === 1;
+  }
+
+  function listLegalMovesForDie(st, player, die) {
+    let found = [];
+    if (st.bar[player] > 0) {
+      const to = (player === 'white') ? (25 - die) : die;
+      if (isMoveLegalFor(st, player, 'bar', to, die)) {
+        const target = st.points[to];
+        found.push({
+          from: 'bar', to, dist: die,
+          hit: !!(target && target.color !== player && target.count === 1),
+          bearOff: false
+        });
+      }
+      return found;
+    }
+
+    for (let p in st.points) {
+      if (st.points[p].color !== player) continue;
+      const from = parseInt(p);
+      const to = (player === 'white') ? (from - die) : (from + die);
+
+      if (isMoveLegalFor(st, player, from, to, die)) {
+        const isBear = (to < 1 || to > 24);
+        const target = (!isBear) ? st.points[to] : null;
+        found.push({
+          from, to, dist: die,
+          hit: !!(target && target.color !== player && target.count === 1),
+          bearOff: isBear
+        });
+      }
+    }
+    return found;
+  }
+
+  function applyMoveToState(st, player, move) {
+    const ns = cloneState(st);
+
+    if (move.from === 'bar') ns.bar[player]--;
+    else {
+      ns.points[move.from].count--;
+      if (ns.points[move.from].count === 0) delete ns.points[move.from];
+    }
+
+    if (move.to < 1 || move.to > 24) {
+      ns.off[player]++;
+    } else {
+      if (ns.points[move.to] && ns.points[move.to].color !== player) {
+        const other = (player === 'white') ? 'black' : 'white';
+        ns.bar[other]++;
+        ns.points[move.to] = { count: 1, color: player };
+      } else {
+        if (!ns.points[move.to]) ns.points[move.to] = { count: 0, color: player };
+        ns.points[move.to].count++;
+      }
+    }
+    return ns;
+  }
+
+  function getAllPositions(st, player) {
+    let pos = [];
+    if (st.bar[player] > 0) pos.push('bar');
+    for (let p in st.points) if (st.points[p].color === player) pos.push(parseInt(p));
+    return pos;
+  }
+
+  function isNoDangerState(st) {
+    if (st.bar.black > 0 || st.bar.white > 0) return false;
+    const b = getAllPositions(st, 'black').filter(x => x !== 'bar');
+    const w = getAllPositions(st, 'white').filter(x => x !== 'bar');
+    if (!b.length || !w.length) return false;
+    const minB = Math.min(...b);
+    const maxW = Math.max(...w);
+    return minB > maxW;
+  }
+
+  function countSingles(st, player) {
+    let singles = 0, singlesHome = 0, singlesOutside = 0;
+    for (let p in st.points) {
+      const pt = st.points[p];
+      if (pt.color !== player) continue;
+      if (pt.count === 1) {
+        singles++;
+        const n = parseInt(p);
+        if (player === 'black') (n >= 19 ? singlesHome++ : singlesOutside++);
+        else (n <= 6 ? singlesHome++ : singlesOutside++);
+      }
+    }
+    return { singles, singlesHome, singlesOutside };
+  }
+
+  function countStacks(st, player) {
+    let stacks2 = 0, stacksHome2 = 0;
+    for (let p in st.points) {
+      const pt = st.points[p];
+      if (pt.color !== player) continue;
+      if (pt.count >= 2) {
+        stacks2++;
+        const n = parseInt(p);
+        if (player === 'black') { if (n >= 19) stacksHome2++; }
+        else { if (n <= 6) stacksHome2++; }
+      }
+    }
+    return { stacks2, stacksHome2 };
+  }
+
+  function countEnteredHomeThisSeq(moves, player) {
+    let c = 0;
+    for (const m of moves) {
+      if (player === 'black' && m.to >= 19 && m.to <= 24) c++;
+      if (player === 'white' && m.to >= 1 && m.to <= 6) c++;
+    }
+    return c;
+  }
+
+  function countCrossed18(moves, player) {
+    let c = 0;
+    for (const m of moves) {
+      if (player === 'black' && m.from !== 'bar' && m.from <= 18 && m.to >= 19 && m.to <= 24) c++;
+      if (player === 'white' && m.from !== 'bar' && m.from >= 7 && m.to <= 6 && m.to >= 1) c++;
+    }
+    return c;
+  }
+
+  function getHitWeight(toPoint) {
+    if (toPoint >= 1 && toPoint <= 12) return 260;
+    return 170;
+  }
+
+  function isExitPhase(st, player) {
+    return isHomeReadyFor(st, player);
+  }
+
+  // ---- Feintuning 1: "Hitbare Blots" statt nur Singles zählen ----
+  function canOpponentHitPoint(st, opponent, targetPoint) {
+    // Brute-force über alle Dice-Kombis (1..6, 1..6).
+    // Prüfe: 1) Hit in einem Zug, 2) Hit in zwei Zügen (mit Zwischenfeld), beide Reihenfolgen.
+    const other = opponent;
+    const player = (opponent === 'white') ? 'black' : 'white'; // Ziel gehört (typischerweise) player, aber egal
+
+    // Wenn Gegner auf der Bar ist, muss Entry zuerst (wir bilden das automatisch über legal moves ab)
+    function movesForDie(s, die) {
+      return listLegalMovesForDie(s, other, die);
+    }
+
+    function hitsOnMove(mv) {
+      return (mv.to === targetPoint) && mv.hit;
+    }
+
+    for (let d1 = 1; d1 <= 6; d1++) {
+      for (let d2 = 1; d2 <= 6; d2++) {
+        // 1 Zug reicht
+        for (const mv of movesForDie(st, d1)) if (hitsOnMove(mv)) return true;
+        for (const mv of movesForDie(st, d2)) if (hitsOnMove(mv)) return true;
+
+        // 2 Züge (d1 dann d2)
+        const first1 = movesForDie(st, d1);
+        for (const mv1 of first1) {
+          const s1 = applyMoveToState(st, other, mv1);
+          const second = movesForDie(s1, d2);
+          for (const mv2 of second) if (hitsOnMove(mv2)) return true;
         }
 
-        renderBoard(); drawDie('die1', 1); drawDie('die2', 2);
-    </script>
+        // 2 Züge (d2 dann d1)
+        const first2 = movesForDie(st, d2);
+        for (const mv1 of first2) {
+          const s1 = applyMoveToState(st, other, mv1);
+          const second = movesForDie(s1, d1);
+          for (const mv2 of second) if (hitsOnMove(mv2)) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function countHittableSingles(st, player) {
+    const opp = (player === 'white') ? 'black' : 'white';
+    let hitSingles = 0, hitSinglesHome = 0, hitSinglesOutside = 0;
+
+    for (let p in st.points) {
+      const pt = st.points[p];
+      if (pt.color !== player || pt.count !== 1) continue;
+      const n = parseInt(p);
+      if (canOpponentHitPoint(st, opp, n)) {
+        hitSingles++;
+        if (player === 'black') (n >= 19 ? hitSinglesHome++ : hitSinglesOutside++);
+        else (n <= 6 ? hitSinglesHome++ : hitSinglesOutside++);
+      }
+    }
+    return { hitSingles, hitSinglesHome, hitSinglesOutside };
+  }
+
+  // ---- Feintuning 2: "Stacks halten" / "starke Punkte nicht aufbrechen" ----
+  function stackBreakPenalty(startState, endState, player) {
+    // Bestrafe wenn Punkte mit >=2 in 1 oder 0 fallen – im Home (19-24) besonders stark
+    let pen = 0;
+    for (let p in startState.points) {
+      const sp = startState.points[p];
+      if (sp.color !== player) continue;
+      const n = parseInt(p);
+      if (sp.count < 2) continue;
+
+      const ep = endState.points[p];
+      const endCount = (ep && ep.color === player) ? ep.count : 0;
+
+      if (endCount === 1) {
+        pen += (player === 'black' && n >= 19) ? 260 : 170;
+      } else if (endCount === 0) {
+        pen += (player === 'black' && n >= 19) ? 340 : 220;
+      }
+    }
+    return pen;
+  }
+
+  function generateSequences(st, player, diceArr) {
+    const results = [];
+
+    function rec(curState, remainingDice, seq) {
+      if (remainingDice.length === 0) {
+        results.push({ moves: seq, endState: curState });
+        return;
+      }
+
+      let any = false;
+      for (let i = 0; i < remainingDice.length; i++) {
+        const die = remainingDice[i];
+        const legalMoves = listLegalMovesForDie(curState, player, die);
+        if (!legalMoves.length) continue;
+
+        any = true;
+        for (const mv of legalMoves) {
+          const nextState = applyMoveToState(curState, player, mv);
+          const nextDice = remainingDice.slice();
+          nextDice.splice(i, 1);
+          rec(nextState, nextDice, seq.concat([mv]));
+        }
+      }
+
+      if (!any) {
+        results.push({ moves: seq, endState: curState });
+      }
+    }
+
+    rec(cloneState(st), [...diceArr], []);
+
+    // Maximal mögliche Züge nutzen
+    const maxLen = Math.max(...results.map(r => r.moves.length));
+    let filtered = results.filter(r => r.moves.length === maxLen);
+
+    // Wenn nur 1 Zug möglich mit ungleichen Würfeln -> höherer, wenn möglich
+    if (diceArr.length === 2 && diceArr[0] !== diceArr[1]) {
+      const hi = Math.max(diceArr[0], diceArr[1]);
+      const hasHi = filtered.some(r => r.moves.length >= 1 && r.moves[0].dist === hi);
+      if (maxLen === 1 && hasHi) filtered = filtered.filter(r => r.moves[0].dist === hi);
+    }
+
+    return filtered;
+  }
+
+  function scoreSequence(startState, seqObj, player) {
+    const endState = seqObj.endState;
+    const moves = seqObj.moves;
+
+    const bPips = getPipCountFor(startState, 'black');
+    const wPips = getPipCountFor(startState, 'white');
+    const pipBehind = (player === 'black') ? (bPips > wPips) : (wPips > bPips);
+
+    const exitPhase = isExitPhase(startState, player);
+    const noDanger = isNoDangerState(startState);
+
+    const bearOffCount = moves.filter(m => m.bearOff).length;
+    const hitMoves = moves.filter(m => m.hit);
+    const hitScoreBase = hitMoves.reduce((s, m) => s + getHitWeight(m.to), 0);
+    const hitScore = hitScoreBase * (pipBehind ? 1.6 : 1.0);
+
+    const stacksEnd = countStacks(endState, player);
+    const singlesEnd = countSingles(endState, player);
+
+    // Feintuning: hitbare Singles
+    const hittableEnd = countHittableSingles(endState, player);
+
+    // Fortschritt
+    let progress = 0;
+    for (const m of moves) {
+      if (m.from === 'bar') continue;
+      if (player === 'black') progress += (m.to > 24 ? (25 - m.from) : (m.to - m.from));
+      else progress += (m.to < 1 ? (m.from) : (m.from - m.to));
+    }
+
+    const enteredHome = countEnteredHomeThisSeq(moves, player);
+    const crossed18 = countCrossed18(moves, player);
+
+    // Pasch: 2 Steine eines Stacks nacheinander aufs gleiche Ziel
+    let paschStackBonus = 0;
+    const isDouble = (gameState.currentRoll.length === 4 && gameState.currentRoll.every(x => x === gameState.currentRoll[0]));
+    if (isDouble && moves.length >= 2) {
+      for (let i = 0; i < moves.length - 1; i++) {
+        const a = moves[i], b = moves[i + 1];
+        if (a.from !== 'bar' && b.from === a.from && b.to === a.to) {
+          const startCount = startState.points[a.from]?.color === player ? startState.points[a.from].count : 0;
+          if (startCount >= 2) paschStackBonus += 180;
+        }
+      }
+    }
+
+    const breakPen = stackBreakPenalty(startState, endState, player);
+
+    // ----------------- Scoring nach deinen Regeln -----------------
+
+    // Exit-Phase dominiert immer
+    if (exitPhase) {
+      const score =
+        (bearOffCount * 10000) +               // absolute Priorität
+        (progress * 10) +
+        (stacksEnd.stacksHome2 * 160) -
+        (breakPen * 1.0) -
+        (hittableEnd.hitSinglesOutside * 320) -
+        (hittableEnd.hitSinglesHome * 260) -
+        (singlesEnd.singlesOutside * 120) -
+        (singlesEnd.singlesHome * 90) +
+        paschStackBonus;
+
+      return { score, meta: { exitPhase, noDanger, pipBehind, bearOffCount, hitScore, progress, stacksEnd, singlesEnd, hittableEnd, breakPen, paschStackBonus } };
+    }
+
+    // Keine Gefahr -> Speed über 18 oberste Prio
+    if (noDanger) {
+      const score =
+        (crossed18 * 900) +
+        (enteredHome * 260) +
+        (progress * 14) +
+        (stacksEnd.stacksHome2 * 90) -
+        (breakPen * 0.7) -
+        (singlesEnd.singlesOutside * 60) -
+        (hittableEnd.hitSinglesOutside * 90) + // bei "keine Gefahr" ist Hitbarkeit oft 0, bleibt aber sauber
+        paschStackBonus;
+
+      return { score, meta: { exitPhase, noDanger, pipBehind, bearOffCount, hitScore, progress, stacksEnd, singlesEnd, hittableEnd, breakPen, paschStackBonus } };
+    }
+
+    // Normal: Hit > Sichern > Home rein > Home näher (Fortschritt)
+    const score =
+      (hitScore * 10) +
+      (stacksEnd.stacks2 * 260) +
+      (stacksEnd.stacksHome2 * 460) +
+      (enteredHome * 280) +
+      (progress * 10) +
+      paschStackBonus -
+      (breakPen * 1.0) -
+      (hittableEnd.hitSinglesOutside * 420) -
+      (hittableEnd.hitSinglesHome * 340) -
+      (singlesEnd.singlesOutside * 140) -
+      (singlesEnd.singlesHome * 110);
+
+    return { score, meta: { exitPhase, noDanger, pipBehind, bearOffCount, hitScore, progress, stacksEnd, singlesEnd, hittableEnd, breakPen, paschStackBonus } };
+  }
+
+  function formatSeq(moves) {
+    if (!moves.length) return "—";
+    return moves.map(m => `${m.from}➔${m.to}(${m.dist})${m.hit ? ' HIT' : ''}${m.bearOff ? ' OFF' : ''}`).join(" | ");
+  }
+
+  // ---------- NEW AI MOVE (SEQUENCE-BASED) ----------
+  async function makeAIMove() {
+    if (gameState.currentPlayer !== 'black' || gameState.isAnimating || !gameState.diceRolled) return;
+    if (gameState.currentRoll.length === 0) { endTurn(); return; }
+
+    // Falls Plan existiert: abspielen
+    if (gameState.aiPlan && gameState.aiPlan.length > 0) {
+      const next = gameState.aiPlan.shift();
+      if (isMoveLegal(next.from, next.to, next.dist)) {
+        await animateAndMove(next.from, next.to, next.dist);
+        return;
+      } else {
+        gameState.aiPlan = [];
+      }
+    }
+
+    const start = cloneState(gameState);
+    const player = 'black';
+    const diceArr = [...gameState.currentRoll];
+
+    const seqs = generateSequences(start, player, diceArr);
+    if (!seqs.length) { setTimeout(endTurn, 400); return; }
+
+    // Exit-Phase: max bear-off zuerst
+    const exitPhase = isExitPhase(start, player);
+    let candidates = seqs;
+    if (exitPhase) {
+      const maxOff = Math.max(...seqs.map(s => s.moves.filter(m => m.bearOff).length));
+      candidates = seqs.filter(s => s.moves.filter(m => m.bearOff).length === maxOff);
+    }
+
+    const scored = candidates.map(s => {
+      const res = scoreSequence(start, s, player);
+      return { seq: s, score: res.score, meta: res.meta };
+    }).sort((a, b) => b.score - a.score);
+
+    const best = scored[0];
+    const alt = scored.slice(1, 4);
+
+    // Log
+    const bPips = getPipCount('black');
+    const wPips = getPipCount('white');
+
+if (isAnalysisOn()) {
+  // ... (dein kompletter Log-Block bleibt unverändert hier drin)
+}
+
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    entry.innerHTML = `
+      <strong>SEQ: ${formatSeq(best.seq.moves)}</strong><br>
+      WERT: <span class="score-val">${Math.round(best.score)}</span>
+      <span class="pip-line">PIPS: BRAIN ${bPips} | PINKY ${wPips}</span>
+      <span class="math-step">
+        FLAGS: Exit=${best.meta.exitPhase ? 'JA' : 'NEIN'} | NoDanger=${best.meta.noDanger ? 'JA' : 'NEIN'} | PipHinten=${best.meta.pipBehind ? 'JA' : 'NEIN'}<br>
+        Hits=${Math.round(best.meta.hitScore)} | Off=${best.meta.bearOffCount} | Prog=${Math.round(best.meta.progress)} | PaschBonus=${best.meta.paschStackBonus}<br>
+        Stacks2=${best.meta.stacksEnd.stacks2} | HomeStacks2=${best.meta.stacksEnd.stacksHome2} | BreakPen=${Math.round(best.meta.breakPen)}<br>
+        Singles=${best.meta.singlesEnd.singles} (Home ${best.meta.singlesEnd.singlesHome} / Out ${best.meta.singlesEnd.singlesOutside})<br>
+        Hittable=${best.meta.hittableEnd.hitSingles} (Home ${best.meta.hittableEnd.hitSinglesHome} / Out ${best.meta.hittableEnd.hitSinglesOutside})
+      </span>
+      <div class="alt-line">ALT: ${
+        alt.length
+          ? alt.map(a => `${formatSeq(a.seq.moves)} [${Math.round(a.score)}]`).join(" || ")
+          : 'Keine'
+      }</div>
+    `;
+    document.getElementById('log-content').appendChild(entry);
+    document.getElementById('ai-log').scrollTop = document.getElementById('ai-log').scrollHeight;
+
+    // Plan speichern und ausführen
+    gameState.aiPlan = best.seq.moves.slice();
+    const first = gameState.aiPlan.shift();
+    if (first) await animateAndMove(first.from, first.to, first.dist);
+    else setTimeout(endTurn, 300);
+  }
+
+  // Start
+  renderBoard();
+  drawDie('die1', 1);
+  drawDie('die2', 2);
+</script>
 
 <div id="win-overlay">
-    <div class="win-content">
-        <h1 id="win-message">PINKY GEWINNT!</h1>
-        <p id="win-subtext">Die Weltherrschaft ist zum Greifen nah.</p>
-        <button id="restart-btn" onclick="location.reload()">REPLAY</button>
-    </div>
+  <h1 id="win-message">PINKY GEWINNT!</h1>
+  <button id="restart-btn" onclick="location.reload()">REPLAY</button>
 </div>
 
 </body>
